@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blood supply levels</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #150a0d;
+    --panel: #1f1015;
+    --line: #3a1d25;
+    --text: #f3e4e7;
+    --muted: #a58a91;
+    --red: #e5243b;
+    --critical: #e5243b;
+    --low: #d2691e;
+    --moderate: #c9a227;
+    --good: #3f9a6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  h1 { font-size: clamp(2rem, 6vw, 3.25rem); font-weight: 800; margin: 0 0 .25rem; letter-spacing: -.02em; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.5rem 0 .75rem; }
+  #updated { color: var(--muted); margin: 0 0 2rem; }
+
+  .drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .75rem; }
+  .drop { text-align: center; }
+  .drop svg { width: 100%; max-width: 88px; height: auto; display: block; margin: 0 auto; }
+  .drop .type { font-weight: 800; font-size: 1.1rem; margin-top: .25rem; }
+  .drop .level { font-size: .9rem; color: var(--muted); }
+
+  .plasma {
+    display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    margin-top: 2rem; padding: 1rem 1.25rem;
+    background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--red);
+    border-radius: 6px;
+  }
+  .plasma .name { font-weight: 800; font-size: 1.25rem; }
+  .plasma .pct { font-size: 2rem; font-weight: 800; color: var(--red); }
+  .plasma .level { color: var(--muted); }
+
+  .chart-box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 1rem; }
+  .note { color: var(--muted); font-size: .9rem; margin: .5rem 0 0; }
+  a { color: var(--red); }
+  @media (prefers-reduced-motion: no-preference) {
+    .drop svg path { transition: fill .3s; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Blood supply levels</h1>
+  <p id="updated">Loading…</p>
+
+  <section class="drops" id="drops" aria-label="Current blood type levels"></section>
+  <section class="plasma" id="plasma" hidden></section>
+
+  <h2>Blood type levels over time</h2>
+  <div class="chart-box"><canvas id="levels"></canvas></div>
+  <p class="note" id="levels-note"></p>
+
+  <h2>Plasma (% of target)</h2>
+  <div class="chart-box"><canvas id="plasmaChart"></canvas></div>
+  <p class="note" id="plasma-note"></p>
+  <p style="color:var(--muted)">note: this page was made with AI to get a sense of visual usefulness, will update it later myself if things work</p>
+</main>
+
+<script>
+const SCORE = { critical: 0, low: 1, moderate: 2, good: 3 }; // todo: guessing terms, known: critical  <->  Good  <->
+const LABELS = ["Critical", "Low", "Moderate", "Good"]; 
+const COLORS = { critical: "#e5243b", low: "#d2691e", moderate: "#c9a227", good: "#3f9a6a" };
+const SERIES_COLORS = ["#ff4d5e", "#a3111f", "#ff9aa5", "#c4566a", "#ffb35c", "#b36a1f", "#e8d5d8", "#8a7378"];
+const DROP = "M12 2C12 2 4 11 4 16a8 8 0 0 0 16 0C20 11 12 2 12 2z";
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const clean = s => (s || "").trim();
+
+Chart.defaults.color = "#a58a91";
+Chart.defaults.borderColor = "#3a1d25";
+Chart.defaults.font.family = '"Bricolage Grotesque", system-ui, sans-serif';
+
+fetch("history.csv?" + Date.now()).then(r => r.text()).then(text => {
+  const [head, ...lines] = text.split(/\r?\n/).filter(l => l.trim());
+  const cols = head.split(",").map(clean);
+  const rows = lines.map(l => {
+    const v = l.split(",");
+    return Object.fromEntries(cols.map((c, i) => [c, clean(v[i])]));
+  });
+  if (!rows.length) { document.getElementById("updated").textContent = "No data yet."; return; }
+
+  const times = [...new Set(rows.map(r => r.timestamp))].sort();
+  const latest = times[times.length - 1];
+  document.getElementById("updated").textContent = "Last updated " + new Date(latest).toLocaleString();
+
+  const cur = rows.filter(r => r.timestamp === latest);
+
+  // Blood type drops
+  document.getElementById("drops").innerHTML = cur.filter(r => r.type !== "Plasma").map(r => {
+    const key = r.level.toLowerCase();
+    const fill = COLORS[key] || "#6b5559";
+    return `<div class="drop">
+      <svg viewBox="0 0 24 24" role="img" aria-label="${esc(r.type)} ${esc(r.level)}"><path d="${DROP}" fill="${fill}"/></svg>
+      <div class="type">${esc(r.type)}</div>
+      <div class="level">${esc(r.level)}</div></div>`;
+  }).join("");
+
+  // Plasma card, with the percentage shown
+  const p = cur.find(r => r.type === "Plasma");
+  if (p) {
+    const pct = parseFloat(p.percent);
+    const box = document.getElementById("plasma");
+    box.hidden = false;
+    box.innerHTML = `<span class="name">Plasma</span>
+      <span class="pct">${isNaN(pct) ? "—" : pct.toFixed(1) + "%"}</span>`;
+  }
+
+  const labels = times.map(t => new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+  const pick = (type, fn) => times.map(t => {
+    const r = rows.find(x => x.timestamp === t && x.type === type);
+    const v = r ? fn(r) : null;
+    return v === undefined || Number.isNaN(v) ? null : v;
+  });
+
+  const types = [...new Set(rows.map(r => r.type))].filter(t => t !== "Plasma");
+  new Chart(document.getElementById("levels"), {
+    type: "line",
+    data: { labels, datasets: types.map((t, i) => ({
+      label: t, stepped: true, pointRadius: 3,
+      borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
+      backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
+      data: pick(t, r => SCORE[r.level.toLowerCase()]),
+    })) },
+    options: { scales: { y: { min: 0, max: 3, ticks: { stepSize: 1, callback: v => LABELS[v] } } } },
+  });
+
+  const plasmaData = pick("Plasma", r => parseFloat(r.percent));
+  new Chart(document.getElementById("plasmaChart"), {
+    type: "line",
+    data: { labels, datasets: [{
+      label: "Plasma %", data: plasmaData, pointRadius: 4, tension: .25,
+      borderColor: "#e5243b", backgroundColor: "rgba(229,36,59,.18)", fill: true,
+    }] },
+    options: { plugins: { legend: { display: false } },
+      scales: { y: { ticks: { callback: v => v + "%" } } } },
+  });
+
+  const n = times.length;
+  if (n < 2) {
+    const msg = "Only one reading so far. The lines appear after the next scheduled run.";
+    document.getElementById("levels-note").textContent = msg;
+    document.getElementById("plasma-note").textContent = msg;
+  } else if (plasmaData.every(v => v === null)) {
+    document.getElementById("plasma-note").textContent =
+      "No plasma percentages in history.csv. Check the percent column.";
+  }
+}).catch(err => {
+  document.getElementById("updated").textContent = "Couldn't load history.csv: " + err.message;
+});
+</script>
+</body>
+</html>
