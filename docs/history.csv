@@ -8,3 +8,12 @@ timestamp,region,type,level,percent
 2026-10-18T20:05:00+00:00,national,AB+,Good,
 2026-10-18T20:05:00+00:00,national,AB-,Good,
 2026-10-18T20:05:00+00:00,national,Plasma,Good,108.48%
+2026-10-18T22:22:49+00:00,national,O+,Critical,
+2026-10-18T22:22:49+00:00,national,O-,Critical,
+2026-10-18T22:22:49+00:00,national,A+,Critical,
+2026-10-18T22:22:49+00:00,national,A-,Critical,
+2026-10-18T22:22:49+00:00,national,B+,Critical,
+2026-10-18T22:22:49+00:00,national,B-,Critical,
+2026-10-18T22:22:49+00:00,national,AB+,Ok,
+2026-10-18T22:22:49+00:00,national,AB-,Good,
+2026-10-18T22:22:49+00:00,national,Plasma,Good,110.3%
