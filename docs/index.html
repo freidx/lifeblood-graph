@@ -133,11 +133,20 @@
   <p class="muted">site not associated with lifeblood.com.au</p>
 
   <script>
-    // note: there's also plasma.appeal-mode, .need-more .okay and .good, currently just using public %, 100% isn't full drop though so 125-150% to be "full"?
+    // note: there's also plasma.appeal-mode, .need-more .okay and .good styles, currently just using public %, 100% isn't full drop though so 125-150% to be "full"?
+    // the slightly annoying thing is that plasma with a style good is good label but blood with a style good is great lol, they look the exact same
 
-    // fix: levels are guessed, "full" is before "great" in styles so I might be wrong
-    // known valid levels: <-> critical <-> good <->
-    const LEVELS = ["empty", "critical", "low", "average", "good", "great", "full"];
+    // labels guessed from classes, hence WIP
+    // label ; class
+      // empty = ?
+      // critical = appeal-mode
+      // low = ?
+      // ok = good
+      // good = great
+      // great = ?
+      // full = ?
+    // unconfirmed style level guesses: empty, low, great, full
+    const LEVELS = ["empty", "critical", "low", "ok", "good", "great", "full"];
     const SHADES = ["#3a3a3a", "#ff9a9a", "#ff6666", "#ff4040", "#ff2a2a", "#f01020", "#e00018"];
     const LINES = ["#ff2b2b", "#ffffff", "#ff8a8a", "#9a9a9a", "#c40000", "#ffd0d0", "#666666", "#ff5757"];
     const DROP = "M12 2C12 2 4.5 10.5 4.5 15.5a7.5 7.5 0 0 0 15 0C19.5 10.5 12 2 12 2z";
