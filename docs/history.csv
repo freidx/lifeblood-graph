@@ -323,3 +323,12 @@ timestamp,region,type,level,percent
 2026-11-22T00:14:48+00:00,national,AB+,Ok,
 2026-11-22T00:14:48+00:00,national,AB-,Good,
 2026-11-22T00:14:48+00:00,national,Plasma,Ok,98.55%
+2026-11-23T00:44:28+00:00,national,O+,Good,
+2026-11-23T00:44:28+00:00,national,O-,Need more,
+2026-11-23T00:44:28+00:00,national,A+,Good,
+2026-11-23T00:44:28+00:00,national,A-,Good,
+2026-11-23T00:44:28+00:00,national,B+,Good,
+2026-11-23T00:44:28+00:00,national,B-,Good,
+2026-11-23T00:44:28+00:00,national,AB+,Good,
+2026-11-23T00:44:28+00:00,national,AB-,Good,
+2026-11-23T00:44:28+00:00,national,Plasma,Need more,97.75%
